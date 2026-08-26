@@ -1,0 +1,43 @@
+version: 2
+
+project_name: taskaio-cli
+
+builds:
+  - id: taskaio
+    binary: taskaio
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X github.com/taskaio/taskaio-cli/cmd.Version={{.Version}}
+      - -X github.com/taskaio/taskaio-cli/cmd.Commit={{.Commit}}
+      - -X github.com/taskaio/taskaio-cli/cmd.Date={{.Date}}
+
+archives:
+  - id: taskaio-archive
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format: tar.gz
+    files:
+      - README.md
+      - config.example.yaml
+      - .env.example
+      - LICENSE*
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"

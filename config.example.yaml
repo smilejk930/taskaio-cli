@@ -1,0 +1,6 @@
+# taskAIO CLI Configuration
+# Default path: ~/.config/taskaio/config.yaml (Mode 0600)
+base_url: http://localhost:3000
+token: pat_xxxxxxxxxxxxxxxxxxxxxxxx
+output: json # json | table
+timeout: 30s

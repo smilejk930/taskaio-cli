@@ -1,0 +1,11 @@
+# Binaries and build artifacts
+bin/
+dist/
+
+# Test artifacts
+coverage.txt
+*.out
+
+# Local config & environments
+.env
+config.yaml
