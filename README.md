@@ -72,6 +72,60 @@ make build-all
 - `bin/taskaio-linux-amd64`
 - `bin/taskaio-linux-arm64`
 
+### 오프라인 서버에 설치
+
+인터넷에 연결된 빌드 서버에서 대상 서버의 CPU 아키텍처에 맞는 바이너리를 준비합니다.
+
+```bash
+make build-all
+
+cd bin
+sha256sum taskaio-linux-amd64 > taskaio-linux-amd64.sha256
+sha256sum taskaio-linux-arm64 > taskaio-linux-arm64.sha256
+```
+
+대상 서버의 CPU 아키텍처는 다음 명령으로 확인할 수 있습니다.
+
+```bash
+uname -m
+```
+
+아키텍처별로 옮겨야 할 파일은 다음과 같습니다.
+
+| `uname -m` 출력 | 바이너리 | 체크섬 파일 |
+| --- | --- | --- |
+| `x86_64`, `amd64` | `taskaio-linux-amd64` | `taskaio-linux-amd64.sha256` |
+| `aarch64`, `arm64` | `taskaio-linux-arm64` | `taskaio-linux-arm64.sha256` |
+
+해당 바이너리와 체크섬 파일을 사내 파일 전송망, 이동식 저장장치 등의 허용된 방법으로 오프라인 서버의 같은 디렉터리에 옮깁니다. 오프라인 서버에서 체크섬을 검증한 뒤 현재 사용자 계정에 설치합니다. 다음 예시는 Linux amd64 서버를 기준으로 합니다.
+
+```bash
+sha256sum -c taskaio-linux-amd64.sha256
+
+mkdir -p "$HOME/.local/bin"
+install -m 0755 taskaio-linux-amd64 "$HOME/.local/bin/taskaio"
+
+export PATH="$HOME/.local/bin:$PATH"
+taskaio --version
+```
+
+Linux arm64 서버에서는 위 명령의 `taskaio-linux-amd64`를 `taskaio-linux-arm64`로 바꿉니다.
+
+모든 사용자에게 시스템 공용으로 설치하려면 관리자 권한으로 `/usr/local/bin`에 설치합니다.
+
+```bash
+sudo install -m 0755 taskaio-linux-amd64 /usr/local/bin/taskaio
+taskaio --version
+```
+
+`~/.local/bin`을 계속 `PATH`에 포함하려면 사용하는 셸의 설정 파일(예: `~/.bashrc`)에 다음 내용을 추가합니다.
+
+```bash
+grep -qxF 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.bashrc" \
+  || printf '\nexport PATH="$HOME/.local/bin:$PATH"\n' >> "$HOME/.bashrc"
+source "$HOME/.bashrc"
+```
+
 ## 빠른 시작
 
 ```bash
