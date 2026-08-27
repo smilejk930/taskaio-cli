@@ -166,6 +166,15 @@ func (c *Client) ListTasks(ctx context.Context, projectID string, params url.Val
 	return &resp, nil
 }
 
+func (c *Client) GetTaskSummary(ctx context.Context, projectID string, params url.Values) (*TaskSummary, error) {
+	var resp SingleResponse[TaskSummary]
+	endpoint := fmt.Sprintf("/api/v1/projects/%s/tasks/summary", url.PathEscape(projectID))
+	if err := c.doRequest(ctx, http.MethodGet, endpoint, params, nil, &resp); err != nil {
+		return nil, err
+	}
+	return &resp.Data, nil
+}
+
 func (c *Client) GetTask(ctx context.Context, taskID string) (*Task, error) {
 	var resp SingleResponse[Task]
 	endpoint := fmt.Sprintf("/api/v1/tasks/%s", url.PathEscape(taskID))

@@ -84,6 +84,22 @@ type Task struct {
 	UpdatedAt   string  `json:"updatedAt"`
 }
 
+type TaskCounts struct {
+	Total      int `json:"total"`
+	Completed  int `json:"completed"`
+	Incomplete int `json:"incomplete"`
+	InProgress int `json:"inProgress"`
+}
+
+type TaskSummary struct {
+	AllTasks        TaskCounts `json:"allTasks"`
+	ManagementTasks TaskCounts `json:"managementTasks"`
+	Progress        int        `json:"progress"`
+	DueSoon         int        `json:"dueSoon"`
+	Overdue         int        `json:"overdue"`
+	NoDueDate       int        `json:"noDueDate"`
+}
+
 // Schedule represents a holiday/schedule resource.
 type Schedule struct {
 	ID        string  `json:"id"`

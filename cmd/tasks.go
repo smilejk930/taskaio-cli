@@ -35,14 +35,13 @@ var tasksListCmd = &cobra.Command{
 			exitWithError(fmt.Errorf("project ID is required (--project)"))
 		}
 
-		search, _ := cmd.Flags().GetString("search")
-		status, _ := cmd.Flags().GetString("status")
-		priority, _ := cmd.Flags().GetString("priority")
-		assignee, _ := cmd.Flags().GetString("assignee")
-		parent, _ := cmd.Flags().GetString("parent")
 		limit, _ := cmd.Flags().GetInt("limit")
 		cursor, _ := cmd.Flags().GetString("cursor")
 		fetchAll, _ := cmd.Flags().GetBool("all")
+		filterParams, err := buildTaskFilterParams(cmd, true)
+		if err != nil {
+			exitWithError(err)
+		}
 
 		var allTasks []apiclient.Task
 		var meta apiclient.Meta
@@ -50,20 +49,8 @@ var tasksListCmd = &cobra.Command{
 
 		for {
 			params := url.Values{}
-			if search != "" {
-				params.Set("search", search)
-			}
-			if status != "" {
-				params.Set("status", status)
-			}
-			if priority != "" {
-				params.Set("priority", priority)
-			}
-			if assignee != "" {
-				params.Set("assigneeId", assignee)
-			}
-			if parent != "" {
-				params.Set("parentId", parent)
+			for key, values := range filterParams {
+				params[key] = append([]string(nil), values...)
 			}
 			if limit > 0 {
 				params.Set("limit", strconv.Itoa(limit))
@@ -95,6 +82,36 @@ var tasksListCmd = &cobra.Command{
 		}
 
 		if err := output.PrintTaskList(os.Stdout, cfg.Output, &apiclient.ListResponse[apiclient.Task]{Data: allTasks, Meta: meta}); err != nil {
+			exitWithError(err)
+		}
+	},
+}
+
+var tasksSummaryCmd = &cobra.Command{
+	Use:   "summary",
+	Short: "Show task summary for a project",
+	Run: func(cmd *cobra.Command, args []string) {
+		client, cfg, err := getClient(cmd)
+		if err != nil {
+			exitWithError(err)
+		}
+		if err := requireAuth(cfg); err != nil {
+			exitWithError(err)
+		}
+
+		projectID, _ := cmd.Flags().GetString("project")
+		if projectID == "" {
+			exitWithError(fmt.Errorf("project ID is required (--project)"))
+		}
+		params, err := buildTaskFilterParams(cmd, false)
+		if err != nil {
+			exitWithError(err)
+		}
+		summary, err := client.GetTaskSummary(context.Background(), projectID, params)
+		if err != nil {
+			exitWithError(err)
+		}
+		if err := output.PrintTaskSummary(os.Stdout, cfg.Output, summary); err != nil {
 			exitWithError(err)
 		}
 	},
@@ -324,14 +341,13 @@ var tasksDeleteCmd = &cobra.Command{
 
 func init() {
 	tasksListCmd.Flags().String("project", "", "Project ID (required)")
-	tasksListCmd.Flags().String("search", "", "Search query for task title or description")
-	tasksListCmd.Flags().String("status", "", "Filter by task status (todo, in_progress, review, done)")
-	tasksListCmd.Flags().String("priority", "", "Filter by task priority (low, medium, high, urgent)")
-	tasksListCmd.Flags().String("assignee", "", "Filter by assignee user ID")
-	tasksListCmd.Flags().String("parent", "", "Filter by parent task ID (use 'root' or 'null' for root tasks)")
+	addTaskFilterFlags(tasksListCmd, true)
 	tasksListCmd.Flags().Int("limit", 50, "Number of items per page")
 	tasksListCmd.Flags().String("cursor", "", "Cursor for pagination")
 	tasksListCmd.Flags().Bool("all", false, "Fetch all pages")
+
+	tasksSummaryCmd.Flags().String("project", "", "Project ID (required)")
+	addTaskFilterFlags(tasksSummaryCmd, false)
 
 	tasksCreateCmd.Flags().String("project", "", "Project ID (required)")
 	tasksCreateCmd.Flags().String("title", "", "Task title")
@@ -362,6 +378,7 @@ func init() {
 
 	tasksCmd.AddCommand(tasksListCmd)
 	tasksCmd.AddCommand(tasksGetCmd)
+	tasksCmd.AddCommand(tasksSummaryCmd)
 	tasksCmd.AddCommand(tasksCreateCmd)
 	tasksCmd.AddCommand(tasksUpdateCmd)
 	tasksCmd.AddCommand(tasksDeleteCmd)

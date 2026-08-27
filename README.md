@@ -10,6 +10,8 @@ Linux와 WSL에서 동작하며, 별도의 런타임 없이 단일 바이너리�
 - 프로젝트 구성원 및 역할(`owner`, `manager`, `member`) 조회
 - 프로젝트 업무 목록·상세 조회, 등록, 수정, 삭제
 - 업무 상태·우선순위·담당자·상위 업무 필터링
+- 복수 상태·우선순위, 주간 기간, 관리 업무, 마감 임박·지연 업무 필터링
+- 프로젝트 업무 현황 요약 조회
 - 계층형 업무와 진행률 관리
 - 일정 목록·상세 조회, 등록, 수정, 삭제
 - JSON 파일 또는 표준 입력을 이용한 등록·수정
@@ -284,10 +286,20 @@ taskaio projects members list <projectId> --all --output table
 ```bash
 # 목록 조회
 taskaio tasks list --project <projectId>
-taskaio tasks list --project <projectId> --status in_progress
-taskaio tasks list --project <projectId> --priority high --assignee <userId>
+taskaio tasks list --project <projectId> --status 할일,진행중
+taskaio tasks list --project <projectId> --status todo --status review
+taskaio tasks list --project <projectId> --priority 긴급,높음 --assignee <userId>
+taskaio tasks list --project <projectId> --week 지난주,이번주,다음주
+taskaio tasks list --project <projectId> --management-only
+taskaio tasks list --project <projectId> --due-soon
+taskaio tasks list --project <projectId> --overdue
 taskaio tasks list --project <projectId> --parent <parentTaskId>
 taskaio tasks list --project <projectId> --all
+
+# 업무 요약
+taskaio tasks summary --project <projectId>
+taskaio tasks summary --project <projectId> --week 이번주 --output table
+taskaio tasks summary --project <projectId> --status 진행중,리뷰 --priority 긴급,높음
 
 # 상세 조회
 taskaio tasks get <taskId>
@@ -303,6 +315,18 @@ taskaio tasks update <taskId> --input task-update.json
 # 삭제
 taskaio tasks delete <taskId> --yes
 ```
+
+상태, 우선순위, 주간 옵션은 쉼표로 구분하거나 같은 옵션을 반복할 수 있습니다. 한글과 API 영문 값을 모두 지원합니다.
+
+| 필터 | 한글 값 | 영문 값 |
+| --- | --- | --- |
+| `--status` | `할일`, `진행중`, `리뷰`, `완료` | `todo`, `in_progress`, `review`, `done` |
+| `--priority` | `긴급`, `높음`, `보통`, `낮음` | `urgent`, `high`, `medium`, `low` |
+| `--week` | `지난주`, `이번주`, `다음주` | `last`, `this`, `next` |
+
+주간 필터는 CLI가 실행되는 로컬 시간대에서 월요일부터 일요일까지 계산합니다. 여러 주를 선택하면 가장 이른 주의 월요일부터 가장 늦은 주의 일요일까지 조회하며, 해당 범위와 업무 기간이 겹치는 업무를 반환합니다. 시작일이나 종료일이 없는 업무는 주간 필터 결과에서 제외됩니다.
+
+`--management-only`는 다른 조건에 직접 일치하는 1Depth 업무만 반환합니다. `--due-soon`은 미완료 업무 중 오늘부터 3일 이내 마감 업무를, `--overdue`는 마감일이 지난 미완료 업무를 반환합니다.
 
 일반 사용자는 본인이 담당자로 지정된 업무만 등록·수정·삭제할 수 있습니다. 시스템 관리자는 모든 프로젝트의 업무를 관리할 수 있습니다.
 

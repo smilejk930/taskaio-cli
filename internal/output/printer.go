@@ -171,6 +171,34 @@ func PrintTask(w io.Writer, format string, t *apiclient.Task) error {
 	return PrintTasks(w, format, []apiclient.Task{*t})
 }
 
+func PrintTaskSummary(w io.Writer, format string, summary *apiclient.TaskSummary) error {
+	if format != "table" {
+		return PrintJSON(w, summary)
+	}
+
+	headers := []string{
+		"ALL", "ALL DONE", "ALL OPEN", "ALL IN PROGRESS",
+		"MANAGEMENT", "MGMT DONE", "MGMT OPEN", "MGMT IN PROGRESS",
+		"PROGRESS", "DUE SOON", "OVERDUE", "NO DUE DATE",
+	}
+	rows := [][]string{{
+		strconv.Itoa(summary.AllTasks.Total),
+		strconv.Itoa(summary.AllTasks.Completed),
+		strconv.Itoa(summary.AllTasks.Incomplete),
+		strconv.Itoa(summary.AllTasks.InProgress),
+		strconv.Itoa(summary.ManagementTasks.Total),
+		strconv.Itoa(summary.ManagementTasks.Completed),
+		strconv.Itoa(summary.ManagementTasks.Incomplete),
+		strconv.Itoa(summary.ManagementTasks.InProgress),
+		strconv.Itoa(summary.Progress) + "%",
+		strconv.Itoa(summary.DueSoon),
+		strconv.Itoa(summary.Overdue),
+		strconv.Itoa(summary.NoDueDate),
+	}}
+	RenderTable(w, headers, rows)
+	return nil
+}
+
 // PrintScheduleList preserves pagination metadata in JSON output.
 func PrintScheduleList(w io.Writer, format string, response *apiclient.ListResponse[apiclient.Schedule]) error {
 	if format != "table" {
