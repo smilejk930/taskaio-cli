@@ -105,7 +105,8 @@ sha256sum -c taskaio-linux-amd64.sha256
 mkdir -p "$HOME/.local/bin"
 install -m 0755 taskaio-linux-amd64 "$HOME/.local/bin/taskaio"
 
-export PATH="$HOME/.local/bin:$PATH"
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
 taskaio --version
 ```
 
@@ -116,14 +117,6 @@ Linux arm64 서버에서는 위 명령의 `taskaio-linux-amd64`를 `taskaio-linu
 ```bash
 sudo install -m 0755 taskaio-linux-amd64 /usr/local/bin/taskaio
 taskaio --version
-```
-
-`~/.local/bin`을 계속 `PATH`에 포함하려면 사용하는 셸의 설정 파일(예: `~/.bashrc`)에 다음 내용을 추가합니다.
-
-```bash
-grep -qxF 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.bashrc" \
-  || printf '\nexport PATH="$HOME/.local/bin:$PATH"\n' >> "$HOME/.bashrc"
-source "$HOME/.bashrc"
 ```
 
 ## 빠른 시작
