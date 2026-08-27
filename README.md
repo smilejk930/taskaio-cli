@@ -92,27 +92,43 @@ uname -m
 
 아키텍처별로 옮겨야 할 파일은 다음과 같습니다.
 
-| `uname -m` 출력 | 바이너리 | 체크섬 파일 |
-| --- | --- | --- |
-| `x86_64`, `amd64` | `taskaio-linux-amd64` | `taskaio-linux-amd64.sha256` |
+
+| `uname -m` 출력      | 바이너리                  | 체크섬 파일                       |
+| ------------------ | --------------------- | ---------------------------- |
+| `x86_64`, `amd64`  | `taskaio-linux-amd64` | `taskaio-linux-amd64.sha256` |
 | `aarch64`, `arm64` | `taskaio-linux-arm64` | `taskaio-linux-arm64.sha256` |
+
 
 해당 바이너리와 체크섬 파일을 사내 파일 전송망, 이동식 저장장치 등의 허용된 방법으로 오프라인 서버의 같은 디렉터리에 옮깁니다. 오프라인 서버에서 체크섬을 검증한 뒤 현재 사용자 계정에 설치합니다. 다음 예시는 Linux amd64 서버를 기준으로 합니다.
 
 ```bash
 sha256sum -c taskaio-linux-amd64.sha256
+```
 
+모든 사용자에게 시스템 공용으로 설치하려면 관리자 권한으로 `/usr/local/bin`에 설치합니다.
+
+```bash
 mkdir -p "$HOME/.local/bin"
 install -m 0755 taskaio-linux-amd64 "$HOME/.local/bin/taskaio"
+```
 
+`~/.local/bin`을 계속 `PATH`에 포함하려면 사용하는 셸의 설정 파일(예: `~/.bashrc`)에 다음 내용을 추가합니다.
+```bash
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc
+```
+또는
+```bash
+grep -qxF 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.bashrc" \
+  || printf '\nexport PATH="$HOME/.local/bin:$PATH"\n' >> "$HOME/.bashrc"
+source "$HOME/.bashrc"
+```
+
+```bash
 taskaio --version
 ```
 
 Linux arm64 서버에서는 위 명령의 `taskaio-linux-amd64`를 `taskaio-linux-arm64`로 바꿉니다.
-
-모든 사용자에게 시스템 공용으로 설치하려면 관리자 권한으로 `/usr/local/bin`에 설치합니다.
 
 ```bash
 sudo install -m 0755 taskaio-linux-amd64 /usr/local/bin/taskaio
@@ -198,13 +214,15 @@ timeout: 30s
 
 지원 환경변수:
 
-| 환경변수 | 설명 | 기본값 |
-| --- | --- | --- |
-| `TASKAIO_BASE_URL` | taskAIO 서버 주소 | `http://localhost:3000` |
-| `TASKAIO_TOKEN` | PAT | 없음 |
-| `TASKAIO_OUTPUT` | 출력 형식(`json`, `table`) | `json` |
-| `TASKAIO_TIMEOUT` | HTTP 요청 제한 시간 | `30s` |
-| `TASKAIO_CONFIG` | 설정 파일 경로 | XDG 기본 경로 |
+
+| 환경변수               | 설명                     | 기본값                     |
+| ------------------ | ---------------------- | ----------------------- |
+| `TASKAIO_BASE_URL` | taskAIO 서버 주소          | `http://localhost:3000` |
+| `TASKAIO_TOKEN`    | PAT                    | 없음                      |
+| `TASKAIO_OUTPUT`   | 출력 형식(`json`, `table`) | `json`                  |
+| `TASKAIO_TIMEOUT`  | HTTP 요청 제한 시간          | `30s`                   |
+| `TASKAIO_CONFIG`   | 설정 파일 경로               | XDG 기본 경로               |
+
 
 설정 파일을 생성하거나 덮어쓰려면 다음 명령을 사용합니다.
 
@@ -215,15 +233,17 @@ taskaio config init --force
 
 ## 공통 옵션
 
-| 옵션 | 설명 |
-| --- | --- |
-| `--base-url <URL>` | taskAIO 서버 주소 지정 |
-| `--token <PAT>` | 요청에 사용할 PAT 지정 |
-| `--config <경로>` | 설정 파일 경로 지정 |
-| `--output json\|table` | 출력 형식 지정 |
-| `--timeout <시간>` | HTTP 요청 제한 시간 지정(예: `30s`) |
-| `-h`, `--help` | 도움말 출력 |
-| `-v`, `--version` | 버전 출력 |
+
+| 옵션                    | 설명                         |
+| --------------------- | -------------------------- |
+| `--base-url <URL>`    | taskAIO 서버 주소 지정           |
+| `--token <PAT>`       | 요청에 사용할 PAT 지정             |
+| `--config <경로>`       | 설정 파일 경로 지정                |
+| `--output json|table` | 출력 형식 지정                   |
+| `--timeout <시간>`      | HTTP 요청 제한 시간 지정(예: `30s`) |
+| `-h`, `--help`        | 도움말 출력                     |
+| `-v`, `--version`     | 버전 출력                      |
+
 
 ## 명령어
 
@@ -365,15 +385,17 @@ taskaio schedules list --output table
 
 ## 종료 코드
 
-| 종료 코드 | 의미 | 예시 |
-| --- | --- | --- |
-| `0` | 성공 | 명령 정상 완료 |
-| `2` | 입력 또는 설정 오류 | 잘못된 옵션, 필수값 누락, 400/422 응답, 설정 오류 |
-| `3` | 인증 실패 | PAT 누락 또는 401 응답 |
-| `4` | 권한 부족 | 403 응답 |
-| `5` | 리소스 없음 또는 접근 불가 | 404 응답 |
-| `6` | 충돌 | 409 응답 |
-| `7` | API, 서버 또는 네트워크 오류 | 5xx 응답, 연결 실패, 제한 시간 초과 |
+
+| 종료 코드 | 의미                 | 예시                                |
+| ----- | ------------------ | --------------------------------- |
+| `0`   | 성공                 | 명령 정상 완료                          |
+| `2`   | 입력 또는 설정 오류        | 잘못된 옵션, 필수값 누락, 400/422 응답, 설정 오류 |
+| `3`   | 인증 실패              | PAT 누락 또는 401 응답                  |
+| `4`   | 권한 부족              | 403 응답                            |
+| `5`   | 리소스 없음 또는 접근 불가    | 404 응답                            |
+| `6`   | 충돌                 | 409 응답                            |
+| `7`   | API, 서버 또는 네트워크 오류 | 5xx 응답, 연결 실패, 제한 시간 초과           |
+
 
 셸 스크립트에서는 종료 코드를 이용해 오류를 구분할 수 있습니다.
 
