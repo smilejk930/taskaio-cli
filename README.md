@@ -365,7 +365,7 @@ taskaio schedules update <scheduleId> --input schedule-update.json
 기본 JSON 결과는 표준 출력(`stdout`)으로 전달됩니다. 오류와 진단 메시지는 표준 오류(`stderr`)로 분리되므로 파이프라인에서 안전하게 사용할 수 있습니다.
 
 ```bash
-taskaio projects list | jq '.[] | .id'
+taskaio projects list | jq '.data[] | .id'
 taskaio tasks list --project <projectId> --all > tasks.json
 taskaio schedules list --output table
 ```
@@ -385,8 +385,9 @@ taskaio schedules list --output table
 셸 스크립트에서는 종료 코드를 이용해 오류를 구분할 수 있습니다.
 
 ```bash
-if ! taskaio auth status >/dev/null; then
-  code=$?
+taskaio auth status >/dev/null
+code=$?
+if [ "$code" -ne 0 ]; then
   echo "인증 확인 실패: $code" >&2
 fi
 ```

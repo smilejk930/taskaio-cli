@@ -45,6 +45,7 @@ var tasksListCmd = &cobra.Command{
 		fetchAll, _ := cmd.Flags().GetBool("all")
 
 		var allTasks []apiclient.Task
+		var meta apiclient.Meta
 		currentCursor := cursor
 
 		for {
@@ -77,14 +78,23 @@ var tasksListCmd = &cobra.Command{
 			}
 
 			allTasks = append(allTasks, resp.Data...)
+			meta = resp.Meta
 
 			if !fetchAll || !resp.Meta.HasMore || resp.Meta.NextCursor == nil || *resp.Meta.NextCursor == "" {
 				break
 			}
 			currentCursor = *resp.Meta.NextCursor
 		}
+		if fetchAll {
+			meta.HasMore = false
+			meta.NextCursor = nil
+			if meta.Total == nil {
+				total := len(allTasks)
+				meta.Total = &total
+			}
+		}
 
-		if err := output.PrintTasks(os.Stdout, cfg.Output, allTasks); err != nil {
+		if err := output.PrintTaskList(os.Stdout, cfg.Output, &apiclient.ListResponse[apiclient.Task]{Data: allTasks, Meta: meta}); err != nil {
 			exitWithError(err)
 		}
 	},

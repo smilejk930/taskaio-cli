@@ -21,9 +21,9 @@ type ListResponse[T any] struct {
 // RawErrorResponse wraps the structured API error response.
 type RawErrorResponse struct {
 	Error struct {
-		Code    string                 `json:"code"`
-		Message string                 `json:"message"`
-		Details map[string]interface{} `json:"details,omitempty"`
+		Code    string      `json:"code"`
+		Message string      `json:"message"`
+		Details interface{} `json:"details,omitempty"`
 	} `json:"error"`
 }
 
@@ -39,7 +39,7 @@ type AuthMeResponse struct {
 		ID        string   `json:"id"`
 		Name      string   `json:"name"`
 		ExpiresAt *string  `json:"expiresAt,omitempty"`
-		Scopes    []string `json:"scopes"`
+		Scopes    []string `json:"scopes,omitempty"`
 	} `json:"token"`
 }
 
@@ -59,7 +59,6 @@ type ProjectMember struct {
 	UserID      string  `json:"userId"`
 	ProjectID   string  `json:"projectId"`
 	Role        string  `json:"role"`
-	JoinedAt    string  `json:"joinedAt"`
 	DisplayName *string `json:"displayName,omitempty"`
 	Username    *string `json:"username,omitempty"`
 	Email       *string `json:"email,omitempty"`

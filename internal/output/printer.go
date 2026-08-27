@@ -69,6 +69,14 @@ func PrintProjects(w io.Writer, format string, projects []apiclient.Project) err
 	return nil
 }
 
+// PrintProjectList preserves pagination metadata in JSON output.
+func PrintProjectList(w io.Writer, format string, response *apiclient.ListResponse[apiclient.Project]) error {
+	if format != "table" {
+		return PrintJSON(w, response)
+	}
+	return PrintProjects(w, format, response.Data)
+}
+
 // PrintProject prints a single project either in table or JSON.
 func PrintProject(w io.Writer, format string, p *apiclient.Project) error {
 	if format != "table" {
@@ -83,7 +91,7 @@ func PrintMembers(w io.Writer, format string, members []apiclient.ProjectMember)
 		return PrintJSON(w, members)
 	}
 
-	headers := []string{"USER ID", "NAME / EMAIL", "ROLE", "JOINED AT"}
+	headers := []string{"USER ID", "NAME / EMAIL", "ROLE"}
 	var rows [][]string
 	for _, m := range members {
 		name := "-"
@@ -96,11 +104,18 @@ func PrintMembers(w io.Writer, format string, members []apiclient.ProjectMember)
 			m.UserID,
 			name,
 			m.Role,
-			m.JoinedAt,
 		})
 	}
 	RenderTable(w, headers, rows)
 	return nil
+}
+
+// PrintMemberList preserves pagination metadata in JSON output.
+func PrintMemberList(w io.Writer, format string, response *apiclient.ListResponse[apiclient.ProjectMember]) error {
+	if format != "table" {
+		return PrintJSON(w, response)
+	}
+	return PrintMembers(w, format, response.Data)
 }
 
 // PrintTasks prints task list.
@@ -140,12 +155,28 @@ func PrintTasks(w io.Writer, format string, tasks []apiclient.Task) error {
 	return nil
 }
 
+// PrintTaskList preserves pagination metadata in JSON output.
+func PrintTaskList(w io.Writer, format string, response *apiclient.ListResponse[apiclient.Task]) error {
+	if format != "table" {
+		return PrintJSON(w, response)
+	}
+	return PrintTasks(w, format, response.Data)
+}
+
 // PrintTask prints a single task.
 func PrintTask(w io.Writer, format string, t *apiclient.Task) error {
 	if format != "table" {
 		return PrintJSON(w, t)
 	}
 	return PrintTasks(w, format, []apiclient.Task{*t})
+}
+
+// PrintScheduleList preserves pagination metadata in JSON output.
+func PrintScheduleList(w io.Writer, format string, response *apiclient.ListResponse[apiclient.Schedule]) error {
+	if format != "table" {
+		return PrintJSON(w, response)
+	}
+	return PrintSchedules(w, format, response.Data)
 }
 
 // PrintSchedules prints schedule list.

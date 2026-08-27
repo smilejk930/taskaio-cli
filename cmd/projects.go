@@ -36,6 +36,7 @@ var projectsListCmd = &cobra.Command{
 		fetchAll, _ := cmd.Flags().GetBool("all")
 
 		var allProjects []apiclient.Project
+		var meta apiclient.Meta
 		currentCursor := cursor
 
 		for {
@@ -56,14 +57,23 @@ var projectsListCmd = &cobra.Command{
 			}
 
 			allProjects = append(allProjects, resp.Data...)
+			meta = resp.Meta
 
 			if !fetchAll || !resp.Meta.HasMore || resp.Meta.NextCursor == nil || *resp.Meta.NextCursor == "" {
 				break
 			}
 			currentCursor = *resp.Meta.NextCursor
 		}
+		if fetchAll {
+			meta.HasMore = false
+			meta.NextCursor = nil
+			if meta.Total == nil {
+				total := len(allProjects)
+				meta.Total = &total
+			}
+		}
 
-		if err := output.PrintProjects(os.Stdout, cfg.Output, allProjects); err != nil {
+		if err := output.PrintProjectList(os.Stdout, cfg.Output, &apiclient.ListResponse[apiclient.Project]{Data: allProjects, Meta: meta}); err != nil {
 			exitWithError(err)
 		}
 	},
@@ -248,6 +258,7 @@ var projectsMembersListCmd = &cobra.Command{
 		fetchAll, _ := cmd.Flags().GetBool("all")
 
 		var allMembers []apiclient.ProjectMember
+		var meta apiclient.Meta
 		currentCursor := cursor
 
 		for {
@@ -268,14 +279,23 @@ var projectsMembersListCmd = &cobra.Command{
 			}
 
 			allMembers = append(allMembers, resp.Data...)
+			meta = resp.Meta
 
 			if !fetchAll || !resp.Meta.HasMore || resp.Meta.NextCursor == nil || *resp.Meta.NextCursor == "" {
 				break
 			}
 			currentCursor = *resp.Meta.NextCursor
 		}
+		if fetchAll {
+			meta.HasMore = false
+			meta.NextCursor = nil
+			if meta.Total == nil {
+				total := len(allMembers)
+				meta.Total = &total
+			}
+		}
 
-		if err := output.PrintMembers(os.Stdout, cfg.Output, allMembers); err != nil {
+		if err := output.PrintMemberList(os.Stdout, cfg.Output, &apiclient.ListResponse[apiclient.ProjectMember]{Data: allMembers, Meta: meta}); err != nil {
 			exitWithError(err)
 		}
 	},

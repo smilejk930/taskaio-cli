@@ -76,9 +76,10 @@ func LoadConfig(flagConfigPath, flagBaseURL, flagToken, flagOutput string, flagT
 
 		if cfg.TimeoutRaw != "" {
 			d, err := time.ParseDuration(cfg.TimeoutRaw)
-			if err == nil {
-				cfg.Timeout = d
+			if err != nil || d <= 0 {
+				return nil, fmt.Errorf("invalid timeout in config file %s: %q", configPath, cfg.TimeoutRaw)
 			}
+			cfg.Timeout = d
 		}
 	}
 
@@ -93,9 +94,11 @@ func LoadConfig(flagConfigPath, flagBaseURL, flagToken, flagOutput string, flagT
 		cfg.Output = envOutput
 	}
 	if envTimeout := os.Getenv("TASKAIO_TIMEOUT"); envTimeout != "" {
-		if d, err := time.ParseDuration(envTimeout); err == nil {
-			cfg.Timeout = d
+		d, err := time.ParseDuration(envTimeout)
+		if err != nil || d <= 0 {
+			return nil, fmt.Errorf("invalid TASKAIO_TIMEOUT: %q", envTimeout)
 		}
+		cfg.Timeout = d
 	}
 
 	// 4. Override with CLI Flags
@@ -113,6 +116,9 @@ func LoadConfig(flagConfigPath, flagBaseURL, flagToken, flagOutput string, flagT
 	}
 
 	cfg.BaseURL = strings.TrimRight(cfg.BaseURL, "/")
+	if cfg.Output != "json" && cfg.Output != "table" {
+		return nil, fmt.Errorf("invalid output format %q: expected json or table", cfg.Output)
+	}
 	return cfg, nil
 }
 

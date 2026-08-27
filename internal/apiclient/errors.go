@@ -17,10 +17,10 @@ const (
 )
 
 type APIError struct {
-	StatusCode int                    `json:"statusCode"`
-	Code       string                 `json:"code"`
-	Message    string                 `json:"message"`
-	Details    map[string]interface{} `json:"details,omitempty"`
+	StatusCode int         `json:"statusCode"`
+	Code       string      `json:"code"`
+	Message    string      `json:"message"`
+	Details    interface{} `json:"details,omitempty"`
 }
 
 type ConfigError struct{ Err error }

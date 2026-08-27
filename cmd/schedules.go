@@ -15,7 +15,7 @@ import (
 
 var schedulesCmd = &cobra.Command{
 	Use:   "schedules",
-	Short: "Manage schedules and leaves",
+	Short: "Manage schedules",
 }
 
 var schedulesListCmd = &cobra.Command{
@@ -40,6 +40,7 @@ var schedulesListCmd = &cobra.Command{
 		fetchAll, _ := cmd.Flags().GetBool("all")
 
 		var allSchedules []apiclient.Schedule
+		var meta apiclient.Meta
 		currentCursor := cursor
 
 		for {
@@ -72,14 +73,23 @@ var schedulesListCmd = &cobra.Command{
 			}
 
 			allSchedules = append(allSchedules, resp.Data...)
+			meta = resp.Meta
 
 			if !fetchAll || !resp.Meta.HasMore || resp.Meta.NextCursor == nil || *resp.Meta.NextCursor == "" {
 				break
 			}
 			currentCursor = *resp.Meta.NextCursor
 		}
+		if fetchAll {
+			meta.HasMore = false
+			meta.NextCursor = nil
+			if meta.Total == nil {
+				total := len(allSchedules)
+				meta.Total = &total
+			}
+		}
 
-		if err := output.PrintSchedules(os.Stdout, cfg.Output, allSchedules); err != nil {
+		if err := output.PrintScheduleList(os.Stdout, cfg.Output, &apiclient.ListResponse[apiclient.Schedule]{Data: allSchedules, Meta: meta}); err != nil {
 			exitWithError(err)
 		}
 	},
@@ -131,7 +141,7 @@ var schedulesCreateCmd = &cobra.Command{
 		note, _ := cmd.Flags().GetString("note")
 
 		var payload apiclient.CreateScheduleInput
-		if err := validateInputMode(cmd, inputSrc, "name", "start-date", "end-date", "type", "member", "note"); err != nil {
+		if err := validateInputMode(cmd, inputSrc, "name", "start-date", "end-date", "type", "user", "note"); err != nil {
 			exitWithError(err)
 		}
 
@@ -198,7 +208,7 @@ var schedulesUpdateCmd = &cobra.Command{
 		note, _ := cmd.Flags().GetString("note")
 
 		var payload apiclient.UpdateScheduleInput
-		if err := validateInputMode(cmd, inputSrc, "name", "start-date", "end-date", "type", "member", "note"); err != nil {
+		if err := validateInputMode(cmd, inputSrc, "name", "start-date", "end-date", "type", "user", "note"); err != nil {
 			exitWithError(err)
 		}
 
@@ -285,7 +295,7 @@ func init() {
 	schedulesCreateCmd.Flags().String("start-date", "", "Start date (YYYY-MM-DD)")
 	schedulesCreateCmd.Flags().String("end-date", "", "End date (YYYY-MM-DD)")
 	schedulesCreateCmd.Flags().String("type", "member_leave", "Schedule type")
-	schedulesCreateCmd.Flags().String("user", "", "Member user ID (optional for common types)")
+	schedulesCreateCmd.Flags().String("user", "", "Member user ID (optional)")
 	schedulesCreateCmd.Flags().String("note", "", "Schedule note or description")
 	schedulesCreateCmd.Flags().String("input", "", "JSON input file path or '-' for stdin")
 

@@ -12,6 +12,7 @@ import (
 	"github.com/taskaio/taskaio-cli/internal/apiclient"
 	"github.com/taskaio/taskaio-cli/internal/config"
 	"github.com/taskaio/taskaio-cli/internal/output"
+	"golang.org/x/term"
 )
 
 var authCmd = &cobra.Command{
@@ -66,12 +67,21 @@ var authLoginCmd = &cobra.Command{
 			token = flagToken
 		} else {
 			fmt.Fprint(os.Stderr, "Enter Personal Access Token: ")
-			reader := bufio.NewReader(os.Stdin)
-			line, err := reader.ReadString('\n')
-			if err != nil {
-				exitWithError(fmt.Errorf("failed to read token: %w", err))
+			if term.IsTerminal(int(os.Stdin.Fd())) {
+				data, err := term.ReadPassword(int(os.Stdin.Fd()))
+				fmt.Fprintln(os.Stderr)
+				if err != nil {
+					exitWithError(fmt.Errorf("failed to read token: %w", err))
+				}
+				token = strings.TrimSpace(string(data))
+			} else {
+				reader := bufio.NewReader(os.Stdin)
+				line, err := reader.ReadString('\n')
+				if err != nil && err != io.EOF {
+					exitWithError(fmt.Errorf("failed to read token: %w", err))
+				}
+				token = strings.TrimSpace(line)
 			}
-			token = strings.TrimSpace(line)
 		}
 
 		if token == "" {
