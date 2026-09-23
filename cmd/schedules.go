@@ -39,7 +39,7 @@ var schedulesListCmd = &cobra.Command{
 		cursor, _ := cmd.Flags().GetString("cursor")
 		fetchAll, _ := cmd.Flags().GetBool("all")
 
-		var allSchedules []apiclient.Schedule
+		allSchedules := make([]apiclient.Schedule, 0)
 		var meta apiclient.Meta
 		currentCursor := cursor
 
@@ -160,7 +160,7 @@ var schedulesCreateCmd = &cobra.Command{
 		if endDate != "" {
 			payload.EndDate = endDate
 		}
-		if sType != "" {
+		if cmd.Flags().Changed("type") {
 			payload.Type = sType
 		}
 		if user != "" {

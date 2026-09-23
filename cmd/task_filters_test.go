@@ -87,3 +87,37 @@ func TestBuildTaskFilterParamsRejectsConflicts(t *testing.T) {
 		t.Fatal("expected due filter conflict")
 	}
 }
+
+func TestBuildTaskFilterParamsDateRangeAndAsOf(t *testing.T) {
+	command := &cobra.Command{Use: "test"}
+	addTaskFilterFlags(command, true)
+	if err := command.ParseFlags([]string{"--from", "2026-09-21", "--to", "2026-09-27", "--as-of", "2026-09-23", "--due-soon"}); err != nil {
+		t.Fatal(err)
+	}
+	params, err := buildTaskFilterParams(command, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for key, want := range map[string]string{"from": "2026-09-21", "to": "2026-09-27", "asOf": "2026-09-23", "due": "soon"} {
+		if got := params.Get(key); got != want {
+			t.Errorf("%s: got %q, want %q", key, got, want)
+		}
+	}
+}
+
+func TestBuildTaskFilterParamsRejectsInvalidDates(t *testing.T) {
+	for _, args := range [][]string{
+		{"--week", "this", "--from", "2026-09-21"},
+		{"--from", "2026-09-29", "--to", "2026-09-21"},
+		{"--as-of", "2026-02-30"},
+	} {
+		command := &cobra.Command{Use: "test"}
+		addTaskFilterFlags(command, true)
+		if err := command.ParseFlags(args); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := buildTaskFilterParams(command, true); err == nil {
+			t.Errorf("expected error for %v", args)
+		}
+	}
+}

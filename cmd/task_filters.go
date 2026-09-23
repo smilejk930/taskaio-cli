@@ -49,6 +49,9 @@ func addTaskFilterFlags(command *cobra.Command, includeSpecial bool) {
 	command.Flags().StringSlice("priority", nil, "Filter by priority; repeat or comma-separate (긴급, 높음, 보통, 낮음 or urgent, high, medium, low)")
 	command.Flags().String("assignee", "", "Filter by assignee user ID")
 	command.Flags().StringSlice("week", nil, "Filter by task period; repeat or comma-separate (지난주, 이번주, 다음주 or last, this, next)")
+	command.Flags().String("from", "", "Period start date (YYYY-MM-DD)")
+	command.Flags().String("to", "", "Period end date (YYYY-MM-DD)")
+	command.Flags().String("as-of", "", "Reference date for due counts and due filters (YYYY-MM-DD)")
 	if includeSpecial {
 		command.Flags().String("parent", "", "Filter by parent task ID (use 'root' or 'null' for root tasks)")
 		command.Flags().Bool("management-only", false, "Show only directly matching 1-depth management tasks")
@@ -64,6 +67,24 @@ func buildTaskFilterParams(command *cobra.Command, includeSpecial bool) (url.Val
 	priorities, _ := command.Flags().GetStringSlice("priority")
 	assignee, _ := command.Flags().GetString("assignee")
 	weeks, _ := command.Flags().GetStringSlice("week")
+	from, _ := command.Flags().GetString("from")
+	to, _ := command.Flags().GetString("to")
+	asOf, _ := command.Flags().GetString("as-of")
+	if len(weeks) > 0 && (from != "" || to != "") {
+		return nil, fmt.Errorf("--week cannot be combined with --from or --to")
+	}
+	for name, value := range map[string]string{"from": from, "to": to, "as-of": asOf} {
+		if value == "" {
+			continue
+		}
+		parsed, err := time.Parse("2006-01-02", value)
+		if err != nil || parsed.Format("2006-01-02") != value {
+			return nil, fmt.Errorf("invalid --%s date: %q (expected YYYY-MM-DD)", name, value)
+		}
+	}
+	if from != "" && to != "" && from > to {
+		return nil, fmt.Errorf("--to must be on or after --from")
+	}
 
 	if search != "" {
 		params.Set("search", search)
@@ -89,16 +110,24 @@ func buildTaskFilterParams(command *cobra.Command, includeSpecial bool) (url.Val
 	}
 
 	if len(weeks) > 0 {
-		from, to, err := taskWeekRange(weeks, taskFilterNow())
+		weekFrom, weekTo, err := taskWeekRange(weeks, taskFilterNow())
 		if err != nil {
 			return nil, err
 		}
+		from, to = weekFrom, weekTo
+	}
+	if from != "" {
 		params.Set("from", from)
+	}
+	if to != "" {
 		params.Set("to", to)
+	}
+	if asOf == "" {
+		asOf = taskFilterNow().Format("2006-01-02")
 	}
 
 	if !includeSpecial {
-		params.Set("asOf", taskFilterNow().Format("2006-01-02"))
+		params.Set("asOf", asOf)
 		return params, nil
 	}
 
@@ -123,7 +152,9 @@ func buildTaskFilterParams(command *cobra.Command, includeSpecial bool) (url.Val
 		} else {
 			params.Set("due", "overdue")
 		}
-		params.Set("asOf", taskFilterNow().Format("2006-01-02"))
+		params.Set("asOf", asOf)
+	} else if command.Flags().Changed("as-of") {
+		params.Set("asOf", asOf)
 	}
 
 	return params, nil

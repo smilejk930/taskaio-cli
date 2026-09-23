@@ -122,6 +122,7 @@ type CreateProjectInput struct {
 type UpdateProjectInput struct {
 	Name        *string `json:"name,omitempty"`
 	Description *string `json:"description,omitempty"`
+	nullFields  map[string]bool
 }
 
 // CreateTaskInput holds payload for creating a task.
@@ -150,6 +151,7 @@ type UpdateTaskInput struct {
 	EndDate     *string `json:"endDate,omitempty"`
 	Progress    *int    `json:"progress,omitempty"`
 	Color       *string `json:"color,omitempty"`
+	nullFields  map[string]bool
 }
 
 // CreateScheduleInput holds payload for creating a schedule.
@@ -164,10 +166,11 @@ type CreateScheduleInput struct {
 
 // UpdateScheduleInput holds payload for updating a schedule.
 type UpdateScheduleInput struct {
-	Name      *string `json:"name,omitempty"`
-	StartDate *string `json:"startDate,omitempty"`
-	EndDate   *string `json:"endDate,omitempty"`
-	Type      *string `json:"type,omitempty"`
-	MemberID  *string `json:"memberId,omitempty"`
-	Note      *string `json:"note,omitempty"`
+	Name       *string `json:"name,omitempty"`
+	StartDate  *string `json:"startDate,omitempty"`
+	EndDate    *string `json:"endDate,omitempty"`
+	Type       *string `json:"type,omitempty"`
+	MemberID   *string `json:"memberId,omitempty"`
+	Note       *string `json:"note,omitempty"`
+	nullFields map[string]bool
 }

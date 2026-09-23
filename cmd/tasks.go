@@ -43,7 +43,7 @@ var tasksListCmd = &cobra.Command{
 			exitWithError(err)
 		}
 
-		var allTasks []apiclient.Task
+		allTasks := make([]apiclient.Task, 0)
 		var meta apiclient.Meta
 		currentCursor := cursor
 
@@ -184,10 +184,10 @@ var tasksCreateCmd = &cobra.Command{
 		if desc != "" {
 			payload.Description = &desc
 		}
-		if status != "" {
+		if cmd.Flags().Changed("status") {
 			payload.Status = &status
 		}
-		if priority != "" {
+		if cmd.Flags().Changed("priority") {
 			payload.Priority = &priority
 		}
 		if assignee != "" {

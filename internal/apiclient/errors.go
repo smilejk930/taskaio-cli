@@ -1,6 +1,7 @@
 package apiclient
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 )
@@ -39,10 +40,16 @@ func (e *TransportError) Error() string { return e.Err.Error() }
 func (e *TransportError) Unwrap() error { return e.Err }
 
 func (e *APIError) Error() string {
-	if e.Code != "" {
-		return fmt.Sprintf("[%s] %s (HTTP %d)", e.Code, e.Message, e.StatusCode)
+	message := e.Message
+	if e.Details != nil {
+		if details, err := json.Marshal(e.Details); err == nil {
+			message += ": " + string(details)
+		}
 	}
-	return fmt.Sprintf("%s (HTTP %d)", e.Message, e.StatusCode)
+	if e.Code != "" {
+		return fmt.Sprintf("[%s] %s (HTTP %d)", e.Code, message, e.StatusCode)
+	}
+	return fmt.Sprintf("%s (HTTP %d)", message, e.StatusCode)
 }
 
 func GetExitCodeForError(err error) int {

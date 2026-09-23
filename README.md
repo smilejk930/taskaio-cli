@@ -290,8 +290,9 @@ taskaio tasks list --project <projectId> --status 할일,진행중
 taskaio tasks list --project <projectId> --status todo --status review
 taskaio tasks list --project <projectId> --priority 긴급,높음 --assignee <userId>
 taskaio tasks list --project <projectId> --week 지난주,이번주,다음주
+taskaio tasks list --project <projectId> --from 2026-09-01 --to 2026-09-30
 taskaio tasks list --project <projectId> --management-only
-taskaio tasks list --project <projectId> --due-soon
+taskaio tasks list --project <projectId> --due-soon --as-of 2026-09-23
 taskaio tasks list --project <projectId> --overdue
 taskaio tasks list --project <projectId> --parent <parentTaskId>
 taskaio tasks list --project <projectId> --all
@@ -299,6 +300,7 @@ taskaio tasks list --project <projectId> --all
 # 업무 요약
 taskaio tasks summary --project <projectId>
 taskaio tasks summary --project <projectId> --week 이번주 --output table
+taskaio tasks summary --project <projectId> --from 2026-09-01 --to 2026-09-30 --as-of 2026-09-23
 taskaio tasks summary --project <projectId> --status 진행중,리뷰 --priority 긴급,높음
 
 # 상세 조회
@@ -326,7 +328,11 @@ taskaio tasks delete <taskId> --yes
 
 주간 필터는 CLI가 실행되는 로컬 시간대에서 월요일부터 일요일까지 계산합니다. 여러 주를 선택하면 가장 이른 주의 월요일부터 가장 늦은 주의 일요일까지 조회하며, 해당 범위와 업무 기간이 겹치는 업무를 반환합니다. 시작일이나 종료일이 없는 업무는 주간 필터 결과에서 제외됩니다.
 
+`--from`과 `--to`는 날짜 범위의 한쪽만 지정할 수도 있습니다. `--week`와는 함께 사용할 수 없습니다. `--as-of`는 마감 임박·지연 판단과 업무 요약의 기준일을 지정하며, 생략하면 CLI의 로컬 날짜를 사용합니다.
+
 `--management-only`는 다른 조건에 직접 일치하는 1Depth 업무만 반환합니다. `--due-soon`은 미완료 업무 중 오늘부터 3일 이내 마감 업무를, `--overdue`는 마감일이 지난 미완료 업무를 반환합니다.
+
+업무·프로젝트·일정의 선택 항목을 지우려면 수정 JSON에 `null`을 지정합니다. 예를 들어 `{"assigneeId":null,"parentId":null}`은 담당자와 상위 업무를 해제합니다.
 
 일반 사용자는 본인이 담당자로 지정된 업무만 등록·수정·삭제할 수 있습니다. 시스템 관리자는 모든 프로젝트의 업무를 관리할 수 있습니다.
 

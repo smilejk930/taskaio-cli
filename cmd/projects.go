@@ -35,7 +35,7 @@ var projectsListCmd = &cobra.Command{
 		cursor, _ := cmd.Flags().GetString("cursor")
 		fetchAll, _ := cmd.Flags().GetBool("all")
 
-		var allProjects []apiclient.Project
+		allProjects := make([]apiclient.Project, 0)
 		var meta apiclient.Meta
 		currentCursor := cursor
 
@@ -257,7 +257,7 @@ var projectsMembersListCmd = &cobra.Command{
 		cursor, _ := cmd.Flags().GetString("cursor")
 		fetchAll, _ := cmd.Flags().GetBool("all")
 
-		var allMembers []apiclient.ProjectMember
+		allMembers := make([]apiclient.ProjectMember, 0)
 		var meta apiclient.Meta
 		currentCursor := cursor
 
