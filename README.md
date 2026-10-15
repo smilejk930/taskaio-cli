@@ -1,84 +1,45 @@
 # taskAIO CLI
 
-`taskaio`는 터미널과 자동화 환경에서 taskAIO의 프로젝트, 업무, 일정, 프로젝트 구성원을 관리하기 위한 Go 기반 명령줄 프로그램입니다.
+터미널에서 taskAIO의 프로젝트, 업무, 일정을 조회하고 관리하는 도구입니다.
 
-Linux와 WSL에서 동작하며, 별도의 런타임 없이 단일 바이너리로 실행할 수 있습니다. 기본 출력은 자동화와 AI 에이전트가 처리하기 쉬운 JSON입니다.
-
-## 주요 기능
-
-- 프로젝트 목록·상세 조회, 등록, 수정, 삭제
-- 프로젝트 구성원 및 역할(`owner`, `manager`, `member`) 조회
-- 프로젝트 업무 목록·상세 조회, 등록, 수정, 삭제
-- 업무 상태·우선순위·담당자·상위 업무 필터링
-- 복수 상태·우선순위, 주간 기간, 관리 업무, 마감 임박·지연 업무 필터링
-- 프로젝트 업무 현황 요약 조회
-- 계층형 업무와 진행률 관리
-- 일정 목록·상세 조회, 등록, 수정, 삭제
-- JSON 파일 또는 표준 입력을 이용한 등록·수정
-- 커서 페이지네이션과 `--all` 전체 조회
-- 기본 JSON 출력 및 `--output table` 표 형식 출력
-- PAT(Personal Access Token) 인증
-- 자동화에 사용할 수 있는 표준 종료 코드
-
-## 지원 환경
-
-- Linux amd64
-- Linux arm64
-- WSL 2
+Linux amd64·arm64와 WSL 2를 지원합니다. 설치할 서버에는 Go나 Docker 없이 실행 파일 하나만 있으면 됩니다. 인터넷이 차단된 환경에서도 사용할 수 있지만, **taskAIO 서버에는 네트워크로 접속할 수 있어야 합니다.**
 
 ## 설치
 
-### 릴리즈 바이너리 설치
-
-다음 명령은 운영체제와 CPU 아키텍처를 확인하고, 최신 릴리즈와 체크섬을 내려받아 `~/.local/bin/taskaio`에 설치합니다.
+### 인터넷이 연결된 환경
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/smilejk930/taskaio-cli/main/install.sh | bash
-```
-
-특정 버전이나 설치 경로를 지정할 수도 있습니다.
-
-```bash
-TASKAIO_VERSION=v1.2.3 INSTALL_DIR=/usr/local/bin ./install.sh
-```
-
-`~/.local/bin`이 `PATH`에 없다면 셸 설정 파일에 다음 내용을 추가합니다.
-
-```bash
 export PATH="$HOME/.local/bin:$PATH"
+taskaio --version
 ```
 
-### 소스에서 빌드
+공개된 최신 릴리즈를 `~/.local/bin/taskaio`에 설치합니다. 새 터미널에서도 사용하려면 위 `export` 줄을 사용하는 셸의 설정 파일(예: `~/.bashrc`)에 추가하세요.
 
-Go 툴체인이 설치된 환경에서 다음 명령을 사용합니다.
+### 오프라인 서버에 배포
+
+**인터넷이 되는 PC에서 파일을 준비하고, 오프라인 서버로 옮겨 설치합니다.** 다음 빌드 명령은 Linux 또는 WSL에서 실행합니다.
+
+**1. 오프라인 서버의 CPU 확인**
+
+오프라인 서버에서 실행합니다.
 
 ```bash
-make build
-./bin/taskaio --version
+uname -m
 ```
 
-현재 사용자 계정에 설치하려면 다음 명령을 실행합니다.
+| 결과 | 사용할 실행 파일 |
+| --- | --- |
+| `x86_64`, `amd64` | `taskaio-linux-amd64` |
+| `aarch64`, `arm64` | `taskaio-linux-arm64` |
+
+**2. 인터넷이 되는 PC에서 파일 준비**
+
+Go 1.27 이상과 `make`, Git이 필요합니다. 이미 소스가 있다면 해당 저장소 폴더에서 `make build-all`부터 실행하세요.
 
 ```bash
-make install
-```
-
-Linux amd64와 arm64 바이너리를 모두 빌드하려면 다음 명령을 사용합니다.
-
-```bash
-make build-all
-```
-
-생성 파일:
-
-- `bin/taskaio-linux-amd64`
-- `bin/taskaio-linux-arm64`
-
-### 오프라인 서버에 설치
-
-인터넷에 연결된 빌드 서버에서 대상 서버의 CPU 아키텍처에 맞는 바이너리를 준비합니다.
-
-```bash
+git clone https://github.com/smilejk930/taskaio-cli.git
+cd taskaio-cli
 make build-all
 
 cd bin
@@ -86,378 +47,93 @@ sha256sum taskaio-linux-amd64 > taskaio-linux-amd64.sha256
 sha256sum taskaio-linux-arm64 > taskaio-linux-arm64.sha256
 ```
 
-대상 서버의 CPU 아키텍처는 다음 명령으로 확인할 수 있습니다.
+**3. 파일 2개를 오프라인 서버로 전송**
 
-```bash
-uname -m
+서버 CPU에 맞는 **실행 파일과 같은 이름의 `.sha256` 파일**을 사내 파일 전송망이나 USB 등으로 옮깁니다. 두 파일은 서버의 같은 폴더에 두세요.
+
+예를 들어 `x86_64` 서버에는 다음 두 파일만 필요합니다.
+
+```text
+taskaio-linux-amd64
+taskaio-linux-amd64.sha256
 ```
 
-아키텍처별로 옮겨야 할 파일은 다음과 같습니다.
+**4. 오프라인 서버에 설치**
 
-
-| `uname -m` 출력      | 바이너리                  | 체크섬 파일                       |
-| ------------------ | --------------------- | ---------------------------- |
-| `x86_64`, `amd64`  | `taskaio-linux-amd64` | `taskaio-linux-amd64.sha256` |
-| `aarch64`, `arm64` | `taskaio-linux-arm64` | `taskaio-linux-arm64.sha256` |
-
-
-해당 바이너리와 체크섬 파일을 사내 파일 전송망, 이동식 저장장치 등의 허용된 방법으로 오프라인 서버의 같은 디렉터리에 옮깁니다. 오프라인 서버에서 체크섬을 검증한 뒤 현재 사용자 계정에 설치합니다. 다음 예시는 Linux amd64 서버를 기준으로 합니다.
+옮긴 파일이 있는 폴더에서 먼저 파일이 손상되지 않았는지 확인합니다.
 
 ```bash
 sha256sum -c taskaio-linux-amd64.sha256
 ```
 
-모든 사용자에게 시스템 공용으로 설치하려면 관리자 권한으로 `/usr/local/bin`에 설치합니다.
-
-```bash
-mkdir -p "$HOME/.local/bin"
-install -m 0755 taskaio-linux-amd64 "$HOME/.local/bin/taskaio"
-```
-
-`~/.local/bin`을 계속 `PATH`에 포함하려면 사용하는 셸의 설정 파일(예: `~/.bashrc`)에 다음 내용을 추가합니다.
-```bash
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
-source ~/.bashrc
-```
-또는
-```bash
-grep -qxF 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.bashrc" \
-  || printf '\nexport PATH="$HOME/.local/bin:$PATH"\n' >> "$HOME/.bashrc"
-source "$HOME/.bashrc"
-```
-
-```bash
-taskaio --version
-```
-
-Linux arm64 서버에서는 위 명령의 `taskaio-linux-amd64`를 `taskaio-linux-arm64`로 바꿉니다.
+`taskaio-linux-amd64: OK`가 나오면 설치합니다. 아래 명령은 관리자 권한이 필요합니다.
 
 ```bash
 sudo install -m 0755 taskaio-linux-amd64 /usr/local/bin/taskaio
 taskaio --version
 ```
 
-## 빠른 시작
+ARM64 서버라면 위 명령의 `taskaio-linux-amd64`를 모두 `taskaio-linux-arm64`로 바꾸세요.
+
+업데이트할 때도 새 파일을 준비해 같은 순서로 설치하면 됩니다. 기존 서버 주소와 로그인 정보는 유지됩니다.
+
+## taskAIO 서버 연결
+
+1. taskAIO 웹에 로그인한 뒤 **환경 설정 → 개인 액세스 토큰**에서 PAT를 발급합니다.
+2. 아래 서버 주소를 실제 taskAIO 주소로 바꿔 실행하고, 안내가 나오면 PAT를 입력합니다.
 
 ```bash
-# 설정 파일 생성
-taskaio config init
-
-# PAT 저장 및 인증 확인
-taskaio auth login
+taskaio --base-url http://192.168.0.10:3001 auth login
 taskaio auth status
-
-# 프로젝트와 업무 조회
-taskaio projects list
-taskaio tasks list --project <projectId>
-
-# 일정 조회
-taskaio schedules list
 ```
 
-## 인증
+taskAIO와 CLI를 같은 서버에서 실행한다면 `http://127.0.0.1:3001`을 사용할 수 있습니다. 포트는 실제 웹 서버 설정에 맞추세요. 주소 뒤에 `/api/v1`은 붙이지 않습니다.
 
-taskAIO 서버에서 발급한 PAT를 사용합니다.
+로그인에 성공하면 서버 주소와 PAT가 기본적으로 `~/.config/taskaio/config.yaml`에 저장됩니다. 이후에는 서버 주소를 매번 입력하지 않아도 됩니다.
 
-### 대화형 로그인
+자동화용 환경변수와 추가 설정은 [.env.example](.env.example)과 [config.example.yaml](config.example.yaml)을 참고하세요.
+
+## 기본 사용법
+
+기본 출력은 JSON입니다. 사람이 읽기 쉬운 표로 보려면 `--output table`을 붙이세요. 목록 전체를 가져오려면 `--all`을 사용합니다.
 
 ```bash
-taskaio auth login
-```
+# 프로젝트 목록에서 사용할 프로젝트 ID 확인
+taskaio projects list --output table
 
-### 표준 입력으로 로그인
+# 업무 목록과 요약 조회
+taskaio tasks list --project <projectId> --output table
+taskaio tasks summary --project <projectId> --output table
 
-CI/CD 또는 자동화 환경에서는 토큰을 표준 입력으로 전달할 수 있습니다.
+# 이번 주 업무, 진행 중인 업무 조회
+taskaio tasks list --project <projectId> --week 이번주
+taskaio tasks list --project <projectId> --status 진행중
 
-```bash
-printf '%s' "$TASKAIO_TOKEN" | taskaio auth login --token-stdin
-```
+# 업무 등록 및 완료 처리
+taskaio tasks create --project <projectId> --title "개발서버 배포"
+taskaio tasks update <taskId> --status done
 
-### 명령 옵션으로 로그인
-
-```bash
-taskaio auth login --token "pat_xxxxxxxx"
-```
-
-명령 옵션은 셸 기록이나 프로세스 목록에 토큰이 남을 수 있으므로, 자동화 환경에서는 `TASKAIO_TOKEN` 환경변수나 `--token-stdin` 사용을 권장합니다.
-
-현재 인증 정보를 확인하려면 다음 명령을 사용합니다.
-
-```bash
-taskaio auth status
-taskaio auth status --output table
-```
-
-## 환경설정
-
-기본 설정 파일 경로는 다음과 같습니다.
-
-```text
-~/.config/taskaio/config.yaml
-```
-
-`XDG_CONFIG_HOME`이 설정된 경우에는 `$XDG_CONFIG_HOME/taskaio/config.yaml`을 사용합니다. 설정 디렉터리는 `0700`, 토큰이 저장되는 설정 파일은 `0600` 권한으로 생성됩니다.
-
-예시 설정은 [config.example.yaml](./config.example.yaml)과 [.env.example](./.env.example)을 참고하세요.
-
-```yaml
-base_url: http://localhost:3000
-token: pat_xxxxxxxxxxxxxxxxxxxxxxxx
-output: json
-timeout: 30s
-```
-
-설정 적용 우선순위는 다음과 같습니다.
-
-1. 명령 옵션
-2. `TASKAIO_*` 환경변수
-3. 설정 파일
-4. 기본값
-
-지원 환경변수:
-
-
-| 환경변수               | 설명                     | 기본값                     |
-| ------------------ | ---------------------- | ----------------------- |
-| `TASKAIO_BASE_URL` | taskAIO 서버 주소          | `http://localhost:3000` |
-| `TASKAIO_TOKEN`    | PAT                    | 없음                      |
-| `TASKAIO_OUTPUT`   | 출력 형식(`json`, `table`) | `json`                  |
-| `TASKAIO_TIMEOUT`  | HTTP 요청 제한 시간          | `30s`                   |
-| `TASKAIO_CONFIG`   | 설정 파일 경로               | XDG 기본 경로               |
-
-
-설정 파일을 생성하거나 덮어쓰려면 다음 명령을 사용합니다.
-
-```bash
-taskaio config init
-taskaio config init --force
-```
-
-## 공통 옵션
-
-
-| 옵션                    | 설명                         |
-| --------------------- | -------------------------- |
-| `--base-url <URL>`    | taskAIO 서버 주소 지정           |
-| `--token <PAT>`       | 요청에 사용할 PAT 지정             |
-| `--config <경로>`       | 설정 파일 경로 지정                |
-| `--output json|table` | 출력 형식 지정                   |
-| `--timeout <시간>`      | HTTP 요청 제한 시간 지정(예: `30s`) |
-| `-h`, `--help`        | 도움말 출력                     |
-| `-v`, `--version`     | 버전 출력                      |
-
-`--timeout`은 `30s`, `1m`처럼 0보다 큰 시간만 허용합니다.
-
-## 명령어
-
-### 프로젝트
-
-```bash
-# 목록 조회
-taskaio projects list
-taskaio projects list --search "백엔드" --output table
-taskaio projects list --limit 100 --cursor <cursor>
-taskaio projects list --all
-
-# 상세 조회
-taskaio projects get <projectId>
-
-# 등록
-taskaio projects create --name "신규 프로젝트" --description "프로젝트 설명"
-taskaio projects create --input project.json
-taskaio projects create --input - < project.json
-
-# 수정
-taskaio projects update <projectId> --name "변경된 이름"
-taskaio projects update <projectId> --input project-update.json
-
-# 삭제
-taskaio projects delete <projectId>
-taskaio projects delete <projectId> --yes
-
-# 프로젝트 구성원 목록
-taskaio projects members list <projectId>
-taskaio projects members list <projectId> --all --output table
-```
-
-### 업무
-
-업무 목록 명령에는 프로젝트 ID가 필요합니다.
-
-```bash
-# 목록 조회
-taskaio tasks list --project <projectId>
-taskaio tasks list --project <projectId> --status 할일,진행중
-taskaio tasks list --project <projectId> --status todo --status review
-taskaio tasks list --project <projectId> --priority 긴급,높음 --assignee <userId>
-taskaio tasks list --project <projectId> --week 지난주,이번주,다음주
-taskaio tasks list --project <projectId> --from 2026-09-01 --to 2026-09-30
-taskaio tasks list --project <projectId> --management-only
-taskaio tasks list --project <projectId> --due-soon --as-of 2026-09-23
-taskaio tasks list --project <projectId> --overdue
-taskaio tasks list --project <projectId> --parent <parentTaskId>
-taskaio tasks list --project <projectId> --all
-
-# 업무 요약
-taskaio tasks summary --project <projectId>
-taskaio tasks summary --project <projectId> --week 이번주 --output table
-taskaio tasks summary --project <projectId> --from 2026-09-01 --to 2026-09-30 --as-of 2026-09-23
-taskaio tasks summary --project <projectId> --status 진행중,리뷰 --priority 긴급,높음
-
-# 상세 조회
-taskaio tasks get <taskId>
-
-# 등록
-taskaio tasks create --project <projectId> --title "REST API 구현" --priority high
-taskaio tasks create --project <projectId> --input task.json
-
-# 수정
-taskaio tasks update <taskId> --progress 100 --status done
-taskaio tasks update <taskId> --input task-update.json
-
-# 삭제
-taskaio tasks delete <taskId> --yes
-```
-
-상태, 우선순위, 주간 옵션은 쉼표로 구분하거나 같은 옵션을 반복할 수 있습니다. 한글과 API 영문 값을 모두 지원합니다.
-
-| 필터 | 한글 값 | 영문 값 |
-| --- | --- | --- |
-| `--status` | `할일`, `진행중`, `리뷰`, `완료` | `todo`, `in_progress`, `review`, `done` |
-| `--priority` | `긴급`, `높음`, `보통`, `낮음` | `urgent`, `high`, `medium`, `low` |
-| `--week` | `지난주`, `이번주`, `다음주` | `last`, `this`, `next` |
-
-주간 필터는 CLI가 실행되는 로컬 시간대에서 월요일부터 일요일까지 계산합니다. 여러 주를 선택하면 가장 이른 주의 월요일부터 가장 늦은 주의 일요일까지 조회하며, 해당 범위와 업무 기간이 겹치는 업무를 반환합니다. 시작일이나 종료일이 없는 업무는 주간 필터 결과에서 제외됩니다.
-
-`--from`과 `--to`는 날짜 범위의 한쪽만 지정할 수도 있습니다. `--week`와는 함께 사용할 수 없습니다. `--as-of`는 마감 임박·지연 판단과 업무 요약의 기준일을 지정하며, 생략하면 CLI의 로컬 날짜를 사용합니다.
-
-`--management-only`는 다른 조건에 직접 일치하는 1Depth 업무만 반환합니다. `--due-soon`은 미완료 업무 중 오늘부터 3일 이내 마감 업무를, `--overdue`는 마감일이 지난 미완료 업무를 반환합니다.
-
-업무·프로젝트·일정의 선택 항목을 지우려면 수정 JSON에 `null`을 지정합니다. 예를 들어 `{"assigneeId":null,"parentId":null}`은 담당자와 상위 업무를 해제합니다.
-
-일반 사용자는 본인이 담당자로 지정된 업무만 등록·수정·삭제할 수 있습니다. 시스템 관리자는 모든 프로젝트의 업무를 관리할 수 있습니다.
-
-### 일정
-
-```bash
-# 목록 조회
-taskaio schedules list
-taskaio schedules list --from 2026-08-01 --to 2026-08-31
-taskaio schedules list --type member_leave --output table
-taskaio schedules list --all
-
-# 상세 조회
-taskaio schedules get <scheduleId>
-
-# 등록
-taskaio schedules create \
-  --name "연차" \
-  --start-date 2026-09-01 \
-  --end-date 2026-09-02 \
-  --type member_leave
-taskaio schedules create --input schedule.json
-
-# 수정
-taskaio schedules update <scheduleId> --name "오후 반차"
-taskaio schedules update <scheduleId> --input schedule-update.json
-
-# 삭제
-taskaio schedules delete <scheduleId> --yes
-```
-
-일정 권한은 프로젝트, 일정 유형, 대상 팀원을 기준으로 나누지 않습니다. 인증된 사용자는 모든 일정에 대해 조회·등록·수정·삭제할 수 있습니다. 일정 유형과 대상 팀원은 일정 정보를 분류하기 위한 필드입니다.
-
-### 버전과 도움말
-
-```bash
-taskaio version
-taskaio --version
-taskaio help
-taskaio projects --help
-taskaio tasks create --help
-```
-
-## JSON 입력
-
-등록과 수정 명령은 필드 옵션 대신 `--input <파일|->`을 사용할 수 있습니다.
-
-```bash
-taskaio projects create --input project.json
-taskaio tasks create --project <projectId> --input - < task.json
-taskaio schedules update <scheduleId> --input schedule-update.json
-```
-
-`--input`과 요청 본문을 구성하는 필드 옵션은 함께 사용할 수 없습니다. 단, 업무 등록의 `--project`처럼 요청 대상을 지정하는 옵션은 `--input`과 함께 사용합니다.
-
-업무 등록 예시:
-
-```json
-{
-  "title": "CLI 문서 작성",
-  "description": "사용 예제와 설치 방법을 정리합니다.",
-  "status": "in_progress",
-  "priority": "medium",
-  "assigneeId": "user-id",
-  "startDate": "2026-08-26",
-  "endDate": "2026-08-28",
-  "progress": 50
-}
-```
-
-## 출력
-
-기본 JSON 결과는 표준 출력(`stdout`)으로 전달됩니다. 오류와 진단 메시지는 표준 오류(`stderr`)로 분리되므로 파이프라인에서 안전하게 사용할 수 있습니다.
-
-```bash
-taskaio projects list | jq '.data[] | .id'
-taskaio tasks list --project <projectId> --all > tasks.json
+# 일정 목록 조회
 taskaio schedules list --output table
 ```
 
-## 종료 코드
+`<projectId>`와 `<taskId>`는 조회한 실제 ID로 바꿉니다. 실행 가능한 작업은 로그인한 사용자의 서버 권한에 따릅니다.
 
-
-| 종료 코드 | 의미                 | 예시                                |
-| ----- | ------------------ | --------------------------------- |
-| `0`   | 성공                 | 명령 정상 완료                          |
-| `2`   | 입력 또는 설정 오류        | 잘못된 옵션, 필수값 누락, 400/422 응답, 설정 오류 |
-| `3`   | 인증 실패              | PAT 누락 또는 401 응답                  |
-| `4`   | 권한 부족              | 403 응답                            |
-| `5`   | 리소스 없음 또는 접근 불가    | 404 응답                            |
-| `6`   | 충돌                 | 409 응답                            |
-| `7`   | API, 서버 또는 네트워크 오류 | 5xx 응답, 연결 실패, 제한 시간 초과           |
-
-
-셸 스크립트에서는 종료 코드를 이용해 오류를 구분할 수 있습니다.
+프로젝트·업무·일정의 등록, 수정, 삭제와 세부 옵션은 도움말에서 확인할 수 있습니다.
 
 ```bash
-taskaio auth status >/dev/null
-code=$?
-if [ "$code" -ne 0 ]; then
-  echo "인증 확인 실패: $code" >&2
-fi
+taskaio --help
+taskaio projects --help
+taskaio tasks list --help
+taskaio schedules --help
 ```
 
 ## 개발
 
 ```bash
-go test ./...
-go vet ./...
-make build-all
+make build       # bin/taskaio 생성
+go test ./...    # 테스트
+go vet ./...     # 정적 검사
 ```
 
-실제 API와의 전체 연동 테스트는 **폐기 가능한 테스트 서버**에서 실행합니다. 프로젝트·업무·일정을 생성하고 삭제하므로 운영 서버를 지정하지 마세요. 테스트 사용자에게는 PAT와 프로젝트 생성 권한이 필요합니다.
-
-```bash
-TASKAIO_E2E_BASE_URL=http://localhost:3000 \
-TASKAIO_E2E_TOKEN="$TASKAIO_TEST_TOKEN" \
-go test -v ./cmd -run '^TestCLILiveLifecycle$' -count=1
-```
-
-이 테스트는 로그인과 설정 파일 권한, 프로젝트·업무·일정 CRUD, 구성원 조회, 페이지네이션, 업무 필터와 요약, JSON `null` 수정 및 오류 종료 코드를 확인합니다. 환경변수를 지정하지 않으면 일반 테스트에서 건너뜁니다.
-
-릴리즈는 `v*` 형식의 Git 태그가 푸시되면 GitHub Actions와 GoReleaser를 통해 생성됩니다. Linux amd64/arm64 압축 파일과 `checksums.txt`가 함께 배포됩니다.
-
-## 라이선스
-
-MIT License
+라이선스: [MIT](LICENSE)
