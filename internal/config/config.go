@@ -62,6 +62,7 @@ func LoadConfig(flagConfigPath, flagBaseURL, flagToken, flagOutput string, flagT
 		}
 	}
 	cfg.ConfigPath = configPath
+	timeoutSource := "timeout in config file " + configPath
 
 	// 2. Load from YAML file if it exists
 	if _, err := os.Stat(configPath); err == nil {
@@ -72,14 +73,6 @@ func LoadConfig(flagConfigPath, flagBaseURL, flagToken, flagOutput string, flagT
 
 		if err := yaml.Unmarshal(data, cfg); err != nil {
 			return nil, fmt.Errorf("failed to parse yaml config at %s: %w", configPath, err)
-		}
-
-		if cfg.TimeoutRaw != "" {
-			d, err := time.ParseDuration(cfg.TimeoutRaw)
-			if err != nil || d <= 0 {
-				return nil, fmt.Errorf("invalid timeout in config file %s: %q", configPath, cfg.TimeoutRaw)
-			}
-			cfg.Timeout = d
 		}
 	}
 
@@ -94,11 +87,8 @@ func LoadConfig(flagConfigPath, flagBaseURL, flagToken, flagOutput string, flagT
 		cfg.Output = envOutput
 	}
 	if envTimeout := os.Getenv("TASKAIO_TIMEOUT"); envTimeout != "" {
-		d, err := time.ParseDuration(envTimeout)
-		if err != nil || d <= 0 {
-			return nil, fmt.Errorf("invalid TASKAIO_TIMEOUT: %q", envTimeout)
-		}
-		cfg.Timeout = d
+		cfg.TimeoutRaw = envTimeout
+		timeoutSource = "TASKAIO_TIMEOUT"
 	}
 
 	// 4. Override with CLI Flags
@@ -112,7 +102,16 @@ func LoadConfig(flagConfigPath, flagBaseURL, flagToken, flagOutput string, flagT
 		cfg.Output = flagOutput
 	}
 	if flagTimeout > 0 {
-		cfg.Timeout = flagTimeout
+		cfg.TimeoutRaw = flagTimeout.String()
+		timeoutSource = "--timeout"
+	}
+
+	if cfg.TimeoutRaw != "" {
+		d, err := time.ParseDuration(cfg.TimeoutRaw)
+		if err != nil || d <= 0 {
+			return nil, fmt.Errorf("invalid %s: %q (expected a duration greater than zero)", timeoutSource, cfg.TimeoutRaw)
+		}
+		cfg.Timeout = d
 	}
 
 	cfg.BaseURL = strings.TrimRight(cfg.BaseURL, "/")

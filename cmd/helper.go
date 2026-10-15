@@ -17,6 +17,9 @@ func getLoadedConfig(cmd *cobra.Command) (*config.Config, error) {
 	token, _ := cmd.Flags().GetString("token")
 	outputFormat, _ := cmd.Flags().GetString("output")
 	timeout, _ := cmd.Flags().GetDuration("timeout")
+	if cmd.Flags().Changed("timeout") && timeout <= 0 {
+		return nil, &apiclient.ConfigError{Err: fmt.Errorf("--timeout must be greater than zero")}
+	}
 
 	cfg, err := config.LoadConfig(configPath, baseURL, token, outputFormat, timeout)
 	if err != nil {

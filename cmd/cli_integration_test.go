@@ -1,7 +1,9 @@
 package cmd_test
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -97,5 +99,85 @@ func TestCLIEmptyListAndValidationDetails(t *testing.T) {
 	outBytes, _ := command.CombinedOutput()
 	if !strings.Contains(string(outBytes), "title") || !strings.Contains(string(outBytes), "Required") {
 		t.Errorf("validation details missing: %s", outBytes)
+	}
+}
+
+func TestCLIScheduleTypeDefault(t *testing.T) {
+	binary := cliBinary(t)
+	requests := make(chan string, 3)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body struct {
+			Type string `json:"type"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Errorf("decode request: %v", err)
+		}
+		requests <- body.Type
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":{"id":"schedule-1"}}`))
+	}))
+	defer server.Close()
+
+	for _, tc := range []struct {
+		name  string
+		stdin string
+		args  []string
+		want  string
+	}{
+		{"default flag value", "", []string{"--name", "leave", "--start-date", "2026-10-15", "--end-date", "2026-10-15"}, "member_leave"},
+		{"explicit flag value", "", []string{"--name", "holiday", "--start-date", "2026-10-15", "--end-date", "2026-10-15", "--type", "public_holiday"}, "public_holiday"},
+		{"JSON value", `{"name":"holiday","startDate":"2026-10-15","endDate":"2026-10-15","type":"public_holiday"}`, []string{"--input", "-"}, "public_holiday"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			runCLI(t, binary, server.URL, tc.stdin, append([]string{"schedules", "create"}, tc.args...)...)
+			if got := <-requests; got != tc.want {
+				t.Fatalf("request type = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestCLIRejectsNonPositiveTimeout(t *testing.T) {
+	binary := cliBinary(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Error("invalid timeout must be rejected before sending an API request")
+		_, _ = w.Write([]byte(`{"data":[],"meta":{"hasMore":false}}`))
+	}))
+	defer server.Close()
+	for _, value := range []string{"-1s", "0s"} {
+		t.Run(value, func(t *testing.T) {
+			command := exec.Command(binary, "--config", os.DevNull, "--token", "test-token", "--base-url", server.URL, "--timeout="+value, "projects", "list")
+			out, err := command.CombinedOutput()
+			if exit, ok := err.(*exec.ExitError); !ok || exit.ExitCode() != 2 {
+				t.Fatalf("exit = %v, want code 2; output: %s", err, out)
+			}
+			if !strings.Contains(string(out), "--timeout") {
+				t.Fatalf("missing timeout diagnostic: %s", out)
+			}
+		})
+	}
+}
+
+func TestCLIAPIErrorExitCodes(t *testing.T) {
+	binary := cliBinary(t)
+	for status, wantExit := range map[int]int{400: 2, 422: 2, 401: 3, 403: 4, 404: 5, 409: 6, 429: 7, 500: 7} {
+		t.Run(fmt.Sprint(status), func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(status)
+				_, _ = w.Write([]byte(`{"error":{"code":"TEST_ERROR","message":"test diagnostic"}}`))
+			}))
+			defer server.Close()
+			command := exec.Command(binary, "--config", os.DevNull, "--token", "test-token", "--base-url", server.URL, "projects", "list")
+			var stdout, stderr bytes.Buffer
+			command.Stdout, command.Stderr = &stdout, &stderr
+			err := command.Run()
+			if exit, ok := err.(*exec.ExitError); !ok || exit.ExitCode() != wantExit {
+				t.Fatalf("HTTP %d: exit = %v, want %d", status, err, wantExit)
+			}
+			if stdout.Len() != 0 || !strings.Contains(stderr.String(), "test diagnostic") {
+				t.Fatalf("error output: stdout=%q, stderr=%q", stdout.String(), stderr.String())
+			}
+		})
 	}
 }

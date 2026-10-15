@@ -246,6 +246,7 @@ taskaio config init --force
 | `-h`, `--help`        | 도움말 출력                     |
 | `-v`, `--version`     | 버전 출력                      |
 
+`--timeout`은 `30s`, `1m`처럼 0보다 큰 시간만 허용합니다.
 
 ## 명령어
 
@@ -444,6 +445,16 @@ go test ./...
 go vet ./...
 make build-all
 ```
+
+실제 API와의 전체 연동 테스트는 **폐기 가능한 테스트 서버**에서 실행합니다. 프로젝트·업무·일정을 생성하고 삭제하므로 운영 서버를 지정하지 마세요. 테스트 사용자에게는 PAT와 프로젝트 생성 권한이 필요합니다.
+
+```bash
+TASKAIO_E2E_BASE_URL=http://localhost:3000 \
+TASKAIO_E2E_TOKEN="$TASKAIO_TEST_TOKEN" \
+go test -v ./cmd -run '^TestCLILiveLifecycle$' -count=1
+```
+
+이 테스트는 로그인과 설정 파일 권한, 프로젝트·업무·일정 CRUD, 구성원 조회, 페이지네이션, 업무 필터와 요약, JSON `null` 수정 및 오류 종료 코드를 확인합니다. 환경변수를 지정하지 않으면 일반 테스트에서 건너뜁니다.
 
 릴리즈는 `v*` 형식의 Git 태그가 푸시되면 GitHub Actions와 GoReleaser를 통해 생성됩니다. Linux amd64/arm64 압축 파일과 `checksums.txt`가 함께 배포됩니다.
 

@@ -21,7 +21,7 @@ builds:
 archives:
   - id: taskaio-archive
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-    format: tar.gz
+    formats: [tar.gz]
     files:
       - README.md
       - config.example.yaml

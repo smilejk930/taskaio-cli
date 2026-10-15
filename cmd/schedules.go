@@ -160,7 +160,7 @@ var schedulesCreateCmd = &cobra.Command{
 		if endDate != "" {
 			payload.EndDate = endDate
 		}
-		if cmd.Flags().Changed("type") {
+		if inputSrc == "" || cmd.Flags().Changed("type") {
 			payload.Type = sType
 		}
 		if user != "" {
